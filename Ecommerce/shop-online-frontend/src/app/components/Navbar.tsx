@@ -41,7 +41,7 @@ const Navbar = () => {
               <Link href="/contact">Contact</Link>
               {isLoggedIn && (
                 <>
-                  <Link href="/shop">Shop</Link>
+                  <Link href="/list">Shop</Link>
                   <Link href="/deals">Deals</Link>
                 </>
               )}

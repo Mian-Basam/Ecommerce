@@ -52,7 +52,6 @@ export default function DealsPage() {
       image: product.image,
       quantity: 1,
     });
-    toast.success(`${product.name} added to cart`);
   };
 
   if (loading)

@@ -5,7 +5,7 @@ ShopOnline is a full-stack online store. It has two parts:
 - a **Next.js 15 (React 19, TypeScript, Tailwind CSS 4)** frontend
 - an **Express 5 + MongoDB (Mongoose)** REST API backend
 
-Shoppers can browse products, open a product page, read and post reviews, see the discounted products on the deals page, sign up, log in and add items to a cart.
+Shoppers can browse and search products, filter by category, open a product page, read and post reviews, see the discounted products on the deals page, sign up and log in. They can also keep a cart that survives page refreshes and place an order through checkout.
 
 ---
 
@@ -68,11 +68,14 @@ Press **Ctrl+C** to stop both servers.
     │   │   ├── Product.js       # name, brand, category, price, stock, image, rating…
     │   │   ├── Deal.js          # originalPrice, discountPercentage, dealPrice…
     │   │   ├── Review.js        # userId, productId, rating 1-5, comment
-    │   │   ├── Cart.js          # (schema only - not used by routes yet)
-    │   │   └── Order.js         # (schema only - not used by routes yet)
+    │   │   ├── Cart.js          # (schema only - the cart lives in the browser)
+    │   │   └── Order.js         # items, shippingAddress, totalPrice, userId
+    │   ├── middleware/
+    │   │   └── auth.js          # requireAuth: verifies "Authorization: Bearer <jwt>"
     │   ├── api/auth/
     │   │   ├── userRoutes.js    # /api/user/signup, /api/user/login
-    │   │   ├── productRouters.js# /api/products…
+    │   │   ├── productRouters.js# /api/products… (list/search, categories, deals, reviews)
+    │   │   ├── orderRoutes.js   # /api/orders (checkout), /api/orders/mine
     │   │   └── [...nextauth].js # unused NextAuth config (not wired into Express)
     │   ├── data/                # seed JSON: users, products (48), deals (28)
     │   └── .env.example
@@ -85,12 +88,13 @@ Press **Ctrl+C** to stop both servers.
             ├── deals/           # discounted products
             ├── login/ signup/   # auth forms
             ├── about/ contact/  # static pages
-            ├── list/            # placeholder page (search results target)
+            ├── list/            # Shop + search results, category filter, "Load more"
+            ├── cart/            # full cart page + checkout form
             ├── not-found.tsx    # custom 404
-            ├── components/      # Navbar, Slider, ProductList, CartModal, SearchBar…
+            ├── components/      # Navbar, Slider, ProductList, ProductCard, CartModal, SearchBar…
             └── context/
                 ├── UserContext.tsx  # isLoggedIn (based on JWT in localStorage)
-                └── CartContext.tsx  # in-memory cart with toast notifications
+                └── CartContext.tsx  # cart state, saved to localStorage
 ```
 
 ---
@@ -99,16 +103,21 @@ Press **Ctrl+C** to stop both servers.
 
 ### Backend (`Ecommerce/shop-online-backend`)
 
-`server.js` turns on CORS and JSON body parsing, connects to MongoDB, and mounts two routers:
+`server.js` turns on CORS and JSON body parsing, connects to MongoDB, and mounts three routers:
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/user/signup` | Body: `{ name, email, password }`. Creates a user (the password is hashed with bcrypt in a Mongoose `pre('save')` hook). Returns 400 if the email already exists |
 | `POST` | `/api/user/login` | Body: `{ email, password }`. Returns `{ token, user }`. The token is a JWT that expires after 7 days |
-| `GET` | `/api/products?skip=0&limit=20` | Newest products first, paginated |
+| `GET` | `/api/products?skip=0&limit=20` | Newest products first, paginated (`limit` max 100). Optional filters: `search=<text>` (case-insensitive match on name, brand, category or description) and `category=<name>` |
+| `GET` | `/api/products/categories` | Sorted list of the product categories that exist |
 | `GET` | `/api/products/deals` | All deals, each with `price` (original), `dealPrice` and `discountPercentage` |
 | `GET` | `/api/products/:id` | `{ product, reviews }`. Each review includes the reviewer's name |
 | `POST` | `/api/products/:id/reviews` | Body: `{ rating, comment }`. Saves the review and updates the product's average `rating` and `numReviews` |
+| `POST` | `/api/orders` 🔒 | Body: `{ items: [{ id, quantity }], shippingAddress: { address, city, postalCode, country } }`. The server looks up each price itself (the product price, or `dealPrice` for a deal) and ignores any price the client sends. It checks stock, saves the order and lowers product stock. Returns the order |
+| `GET` | `/api/orders/mine` 🔒 | The logged-in user's orders, newest first |
+
+🔒 = requires the `Authorization: Bearer <token>` header, using the token from `/api/user/login`.
 
 **Environment variables** (`.env`):
 
@@ -127,7 +136,9 @@ Press **Ctrl+C** to stop both servers.
 - **Product page** (`/product/[id]`): shows details, stock and rating, lets you pick a quantity and add to the cart, and has a review list and review form.
 - **Deals** (`/deals`): shows the discounted price next to the original.
 - **Auth**: login stores the JWT in `localStorage`, and `UserContext` reads it on page load to show or hide Login/Logout.
-- **Cart**: `CartContext` keeps the cart in React state, and the cart icon in the navbar opens `CartModal`.
+- **Shop and search** (`/list`): the navbar search box goes to `/list?name=<text>`, and the "Shop" link goes to `/list`. The page queries the API, so results cover every product, not just the ones already loaded. Category chips add `&category=<name>`, the URL is shareable, and "Load more" fetches 12 more products at a time.
+- **Cart**: `CartContext` saves the cart to `localStorage`, so it survives refreshes and stays in sync across tabs. The navbar badge shows the total number of items. The cart popup (`CartModal`) has +/- quantity buttons, and **View Cart** / **Checkout** open `/cart`.
+- **Checkout** (`/cart`): change quantities, enter a shipping address and click **Place order**. This sends the cart to `POST /api/orders` with the login token. On success, the page shows a confirmation and empties the cart. Payment is cash on delivery; there's no payment gateway.
 - Images are served from `public/<category>/…`, and their paths are stored in the seed data.
 
 ---
@@ -170,11 +181,11 @@ Inside a container, `localhost` refers to the container itself, so `MONGO_URI` m
 
 ## Known limitations / ideas for improvement
 
-- **The cart isn't saved.** It lives in React state and is lost on page refresh. "Checkout" only shows an alert. The `Cart` and `Order` models exist but no routes use them yet.
-- **Reviews are anonymous.** No auth middleware checks the JWT on API routes, so new reviews are stored with `userId: null`.
-- **The search bar** sends you to `/list?name=…`, but `/list` is still a placeholder page.
-- **The navbar's "Shop" link** goes to `/shop`, which doesn't exist yet (you'll see the 404 page).
-- **Unused pieces:** the Stripe packages are installed but not used yet, and `api/auth/[...nextauth].js` isn't connected to Express.
+- **The cart is saved per browser.** It's kept in `localStorage`, not in the database, so it doesn't follow you to another device. There's no "My orders" page yet; `GET /api/orders/mine` is ready for one.
+- **No online payment.** Orders are cash on delivery, and the Stripe packages are installed but not used yet.
+- **Reviews are anonymous.** The review route doesn't use `requireAuth`, so new reviews are stored with `userId: null`.
+- **The mobile menu** (`components/Menu.tsx`) still has placeholder links that all go to `/`.
+- **Unused pieces:** `api/auth/[...nextauth].js` isn't connected to Express.
 - **About the seed data:** prices are on different scales across categories (for example, makeup is around 1,299 and bags around 79.99), so mixed currencies show up side by side.
 
 ---

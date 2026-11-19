@@ -6,13 +6,38 @@ import Deal from "../../models/Deal.js";
 
 const router = express.Router();
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// GET /api/products/categories - distinct product categories
+router.get("/products/categories", async (req, res) => {
+  try {
+    const categories = await Product.distinct("category");
+    res.json(categories.filter(Boolean).sort());
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching categories" });
+  }
+});
+
 
 router.get("/products", async (req, res) => {
   try {
     const skip = parseInt(req.query.skip) || 0;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
-    const products = await Product.find()
+    // Optional filters: ?search=<text> matches name/brand/category/description,
+    // ?category=<name> matches the category exactly (case-insensitive).
+    const filter = {};
+    const search = String(req.query.search || "").trim();
+    if (search) {
+      const re = new RegExp(escapeRegex(search), "i");
+      filter.$or = [{ name: re }, { brand: re }, { category: re }, { description: re }];
+    }
+    const category = String(req.query.category || "").trim();
+    if (category) {
+      filter.category = new RegExp(`^${escapeRegex(category)}$`, "i");
+    }
+
+    const products = await Product.find(filter)
     .sort({ createdAt: -1, _id: -1 }) 
     .skip(skip)
     .limit(limit);

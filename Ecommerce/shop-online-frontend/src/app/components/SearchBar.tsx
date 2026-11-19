@@ -9,12 +9,8 @@ const SearchBar = () => {
   const router=useRouter();
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Search Query:", query);
-    // You can now use `query` to trigger search logic, e.g., route, API call, etc.
-    if(query)
-    {
-        router.push(`/list?name=${query}`)
-    }
+    const q = query.trim();
+    router.push(q ? `/list?name=${encodeURIComponent(q)}` : "/list");
   };
   
 
@@ -26,10 +22,10 @@ const SearchBar = () => {
     >
       <input
         type="text"
-        placeholder="Search"
+        placeholder="Search products, brands, categories..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="flex-1 cursor-pointer bg-transparent outline-none text-sm"
+        className="flex-1 bg-transparent outline-none text-sm"
         aria-label="Search"
       />
       <button type="submit" className="cursor-pointer p-1">

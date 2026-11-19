@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import CartModal from "./CartModal";
 import { useCart } from "../context/CartContext"; // ✅ import cart context
 
@@ -13,7 +13,13 @@ const NavIcons = () => {
   const [isLogedIn, setIsLogedIn] = useState(false); // Replace with real auth logic
   const router = useRouter();
 
-  const { cartItems } = useCart(); // ✅ get cart items from context
+  const { cartCount } = useCart();
+  const pathname = usePathname();
+
+  // Close the cart popup whenever the user navigates (e.g. "View Cart").
+  useEffect(() => {
+    setIsCartOpen(false);
+  }, [pathname]);
 
   const handleProfile = () => {
     if (!isLogedIn) {
@@ -63,14 +69,14 @@ const NavIcons = () => {
           className="cursor-pointer"
           onClick={() => setIsCartOpen((prev) => !prev)}
         />
-        {cartItems.length > 0 && (
+        {cartCount > 0 && (
           <div className="absolute -top-4 -right-4 w-6 h-6 bg-[#eb1a48] text-white text-sm font-medium flex items-center justify-center rounded-full">
-            {cartItems.length}
+            {cartCount > 99 ? "99+" : cartCount}
           </div>
         )}
         {isCartOpen && (
           <div className="absolute right-0 top-10 z-50">
-            <CartModal />
+            <CartModal onClose={() => setIsCartOpen(false)} />
           </div>
         )}
       </div>

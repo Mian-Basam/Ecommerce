@@ -111,8 +111,6 @@ export default function ProductPage() {
       image: product.image || "",
       quantity,
     });
-
-    toast.success(`${quantity} × ${product.name} added to cart`);
   };
 
   if (loading) return <Loader text="Loading product..." />;
