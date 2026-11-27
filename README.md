@@ -1,4 +1,36 @@
-# ShopOnline - Full-Stack E-commerce App
+<div align="center">
+
+# ShopOnline
+
+### Full-stack e-commerce store: products, deals, reviews, auth and a persistent cart
+
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_8-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+
+[**Quick Start**](#quick-start) &nbsp;•&nbsp; [**Architecture**](#how-it-works) &nbsp;•&nbsp; [**Tech Stack**](#tech-stack) &nbsp;•&nbsp; [**Structure**](#project-structure)
+
+</div>
+
+---
+
+<details>
+<summary><b>Table of contents</b></summary>
+
+- [Overview](#overview)
+- [Quick start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Project structure](#project-structure)
+- [How it works](#how-it-works)
+- [Running the pieces manually](#running-the-pieces-manually)
+- [Known limitations / ideas for improvement](#known-limitations--ideas-for-improvement)
+- [Tech stack](#tech-stack)
+
+</details>
+
+## Overview
 
 ShopOnline is a full-stack online store. It has two parts:
 
@@ -53,6 +85,9 @@ Press **Ctrl+C** to stop both servers.
 
 ## Project structure
 
+<details>
+<summary><b>Show the full project structure</b></summary>
+
 ```
 .
 ├── run.sh                       # one-command install / seed / start
@@ -96,6 +131,8 @@ Press **Ctrl+C** to stop both servers.
                 ├── UserContext.tsx  # isLoggedIn (based on JWT in localStorage)
                 └── CartContext.tsx  # cart state, saved to localStorage
 ```
+
+</details>
 
 ---
 
@@ -194,3 +231,15 @@ Inside a container, `localhost` refers to the container itself, so `MONGO_URI` m
 
 **Frontend:** Next.js 15 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, Framer Motion, Axios, react-toastify, react-icons
 **Backend:** Node.js, Express 5, Mongoose 8, bcrypt, jsonwebtoken, dotenv, cors
+
+---
+
+<div align="center">
+
+**Built by [Mian Basam Ahmad](https://github.com/Mian-Basam)** · Software Engineer & Tech Lead
+
+[![Blog](https://img.shields.io/badge/Blog-mian--basam.github.io-222222?style=flat-square&logo=githubpages&logoColor=white)](https://mian-basam.github.io) [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mian-basam-ahmad-68b997147/) [![GitHub](https://img.shields.io/badge/GitHub-Mian--Basam-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Mian-Basam)
+
+<sub>If this project helped you, consider giving it a ⭐</sub>
+
+</div>
